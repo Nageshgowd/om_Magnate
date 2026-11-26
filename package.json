@@ -1,0 +1,16 @@
+{
+  "name": "om-magnet",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev:api": "node server.js",
+    "dev:web": "npm start --prefix frontend -- --port 4300",
+    "build": "npm install --prefix frontend && npm run build --prefix frontend"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.3",
+    "mongodb": "^7.9.1"
+  }
+}

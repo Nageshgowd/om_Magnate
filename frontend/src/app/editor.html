@@ -1,0 +1,294 @@
+@if (ev(); as e) {
+  <header class="head">
+    <a class="back" routerLink="/" aria-label="Back to My Events"><app-icon name="back" [size]="22" /></a>
+    <div class="titles">
+      <h2>{{ e.name }}</h2>
+      <p>{{ subtitle() }}</p>
+    </div>
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" [class.on]="tab() === 'photos'" [disabled]="!e.setup" (click)="tab.set('photos')">
+        <app-icon name="image-plus" [size]="20" /> Photos
+      </button>
+      <button type="button" role="tab" [class.on]="tab() === 'setup'" (click)="tab.set('setup')">
+        <app-icon name="sliders" [size]="20" /> Setup
+      </button>
+    </div>
+    @if (e.setup) {
+      <button type="button" class="reset" (click)="reset()" [disabled]="!filled()">
+        <app-icon name="reset" [size]="20" /> Reset Sheet
+      </button>
+    }
+  </header>
+
+  <input #addInput type="file" accept="image/*" multiple hidden (change)="addFiles(addInput)" />
+  <input #replaceInput type="file" accept="image/*" hidden (change)="replaceFile(replaceInput)" />
+
+  <div class="cols">
+    <section class="stage" #stageEl>
+      @if (e.setup) {
+        <div class="stage-bar">
+          <button type="button" class="fs" (click)="fullscreen(stageEl)" aria-label="Full screen">
+            <app-icon name="maximize" [size]="20" />
+          </button>
+          <span class="cap">{{ gridTitle() }}</span>
+          <span class="count"><app-icon name="grid" [size]="18" /> {{ filled() }} / {{ e.slots.length }} photos placed</span>
+        </div>
+        <div class="sheet">
+          <app-sheet-preview
+            [ev]="e"
+            [selected]="tab() === 'photos' ? selected() : null"
+            (pick)="selected.set($event)"
+            (addPhoto)="addAt($event)"
+            (zoomChange)="onPinch($event)"
+            (panChange)="onDrag($event)"
+          />
+        </div>
+        @if (tab() === 'photos') {
+          <div class="actions">
+            <button type="button" class="act primary" (click)="addInput.click()" [disabled]="busy()">
+              <app-icon name="plus" [size]="18" /> Add photos
+            </button>
+            <button type="button" class="act" (click)="replaceInput.click()" [disabled]="busy()">
+              <app-icon name="swap" [size]="18" /> Replace
+            </button>
+            <button type="button" class="act" (click)="removePhoto()" [disabled]="!slot()?.photo">
+              <app-icon name="trash" [size]="18" /> Remove photo
+            </button>
+            <button type="button" class="act" (click)="copy()" [disabled]="!slot()?.photo">
+              <app-icon name="copy" [size]="18" /> Copy
+            </button>
+            @if (clipboard()) {
+              <button type="button" class="act" (click)="paste()">
+                <app-icon name="clipboard" [size]="18" /> Paste
+              </button>
+            }
+            <button type="button" class="act" (click)="copyToAll()" [disabled]="!slot()?.photo">
+              <app-icon name="copy-all" [size]="18" /> Copy to all
+            </button>
+          </div>
+        }
+      } @else {
+        <div class="stage-empty">
+          <h3>Your sheet will appear here</h3>
+          <p>Finish the setup on the right to see it.</p>
+        </div>
+      }
+    </section>
+
+    <aside class="right">
+      @if (message()) {
+        <p class="msg" role="status">{{ message() }}</p>
+      }
+
+      @if (tab() === 'setup') {
+        <section class="card">
+          <h3>Event setup</h3>
+          <p class="muted">Choose what you are printing. Then you can add photos.</p>
+
+          <label for="shape">1. Photo Shape <span class="req">*</span></label>
+          <select id="shape" #shapeSel (change)="onShape(shapeSel.value)">
+            @for (s of shapes; track s.id) {
+              <option [value]="s.id" [selected]="s.id === draftShape()">{{ s.label }}</option>
+            }
+          </select>
+
+          <label for="tpl">2. Template / Overlay Size <span class="req">*</span></label>
+          <select id="tpl" #tplSel (change)="draftTemplate.set(tplSel.value)">
+            @for (t of draftTemplates(); track t.id) {
+              <option [value]="t.id" [selected]="t.id === draftTemplate()">{{ templateLabel(t) }}</option>
+            }
+          </select>
+
+          <label for="paper">3. Paper Size <span class="req">*</span></label>
+          <select id="paper" #paperSel (change)="draftPaper.set(paperSel.value)">
+            @for (p of papers; track p.id) {
+              <option [value]="p.id" [selected]="p.id === draftPaper()">
+                {{ p.name }} ({{ mm(p.w) }} × {{ mm(p.h) }} mm)
+              </option>
+            }
+          </select>
+
+          <div class="info" [class.bad]="!draftLayout().count">
+            @if (draftLayout().count) {
+              <b>{{ draftLayout().count }} photos fit on {{ draftPaperObj().name }}</b>
+              <span>
+                Photo {{ dims(draftTpl().photoW, draftTpl().photoH) }} inside a
+                {{ dims(draftTpl().cutW, draftTpl().cutH) }} cut outline ·
+                {{ mm(draftLayout().gapX) }} mm across, {{ mm(draftLayout().gapY) }} mm down between pieces
+              </span>
+            } @else {
+              <b>This template is too large for {{ draftPaperObj().name }}</b>
+              <span>Pick a smaller template or a bigger paper size.</span>
+            }
+          </div>
+
+          <button type="button" class="btn btn-primary save" (click)="saveSetup()" [disabled]="!draftLayout().count">
+            Save &amp; continue to photos →
+          </button>
+        </section>
+      } @else if (e.setup) {
+        <section class="card tcard" [class.dim]="!slot()?.photo">
+          <div class="card-head">
+            <h3><app-icon name="sliders" [size]="22" /> Precision Transform</h3>
+            <span class="pill">Slot #{{ pad(selected() + 1) }}</span>
+          </div>
+          @if (slot(); as s) {
+            <div class="row">
+              <label for="zoom"><app-icon name="zoom" [size]="20" /> Crop Zoom</label>
+              <b class="val">{{ pct(s.zoom) }}%</b>
+            </div>
+            <div class="slider">
+              <button type="button" (click)="nudgeZoom(-10)" [disabled]="!s.photo" aria-label="Zoom out">−</button>
+              <input id="zoom" type="range" min="25" max="300" [value]="pct(s.zoom)" [disabled]="!s.photo" #z (input)="setZoom(+z.value)" />
+              <button type="button" (click)="nudgeZoom(10)" [disabled]="!s.photo" aria-label="Zoom in">+</button>
+            </div>
+
+            <div class="label"><app-icon name="rotate" [size]="20" /> Quick Orientation</div>
+            <div class="two">
+              <button type="button" class="orient" (click)="rotate(-90)" [disabled]="!s.photo">
+                <app-icon name="rotate-left" [size]="20" /> −90°
+              </button>
+              <button type="button" class="orient" (click)="rotate(90)" [disabled]="!s.photo">
+                <app-icon name="rotate" [size]="20" /> +90°
+              </button>
+            </div>
+
+            <div class="row tilt">
+              <label for="tilt">Fine Tilt Alignment</label>
+              <b class="val">{{ tiltOf(s) }}°</b>
+            </div>
+            <div class="tiltrow">
+              <input id="tilt" type="range" min="-45" max="45" step="0.5" [value]="tiltOf(s)" [disabled]="!s.photo" #tl (input)="setTilt(+tl.value)" />
+              <button type="button" class="zero" (click)="setTilt(0)" [disabled]="!s.photo">Zero</button>
+            </div>
+
+            <p class="hint">
+              @if (s.photo) {
+                Drag the photo on the sheet to move it, or pinch with two fingers to zoom.
+              } @else {
+                Tap an empty slot on the sheet to add a photo, then adjust it here.
+              }
+            </p>
+          }
+        </section>
+
+        <section class="card tcard">
+          <div class="card-head">
+            <h3><app-icon name="tag" [size]="22" /> Name label</h3>
+            <span class="pill">Slot #{{ pad(selected() + 1) }}</span>
+          </div>
+          @if (slot()?.photo) {
+            <div class="row namehead">
+              <label for="sname">Name on this photo</label>
+              <span class="counter">{{ nameValue(e).length }}/24</span>
+            </div>
+            <input id="sname" type="text" maxlength="24" placeholder="e.g. Johnathan" [value]="nameValue(e)" #sn (input)="setName(e, sn.value)" />
+            <label class="check same">
+              <input type="checkbox" [checked]="nameAllOn(e)" #na (change)="toggleNameAll(e, na.checked)" />
+              <span>
+                <b>Same name on all photos</b>
+                <small>Writes this name on every photo, including ones you add later</small>
+              </span>
+            </label>
+          } @else {
+            <p class="hint">Add a photo to this slot first, then write a name on it.</p>
+          }
+        </section>
+
+        <section class="card">
+          <h3>Names &amp; designs</h3>
+          <p class="muted">Ribbons, frames and fonts.</p>
+
+          <label for="frame">Design</label>
+          <select id="frame" #fr (change)="patchDesign({ frame: $any(fr.value) })">
+            @for (f of frames; track f.id) {
+              <option [value]="f.id" [selected]="f.id === e.design.frame">{{ f.label }}</option>
+            }
+          </select>
+
+          <div class="two">
+            <div>
+              <label for="ls">Label style</label>
+              <select id="ls" #ls (change)="patchDesign({ labelStyle: $any(ls.value) })">
+                @for (l of labelStyles; track l.id) {
+                  <option [value]="l.id" [selected]="l.id === e.design.labelStyle">{{ l.label }}</option>
+                }
+              </select>
+            </div>
+            <div>
+              <label for="rc">Ribbon colour</label>
+              <select id="rc" #rc (change)="patchDesign({ ribbonColor: rc.value })">
+                @for (c of colors; track c.id) {
+                  <option [value]="c.id" [selected]="c.id === e.design.ribbonColor">{{ c.label }}</option>
+                }
+              </select>
+            </div>
+          </div>
+
+          <label for="tc">Text colour</label>
+          <select id="tc" #tc (change)="patchDesign({ textColor: tc.value })">
+            @for (c of colors; track c.id) {
+              <option [value]="c.id" [selected]="c.id === e.design.textColor">{{ c.label }}</option>
+            }
+          </select>
+
+          <label for="font">Font</label>
+          <div class="fontrow">
+            <select id="font" #fo (change)="patchDesign({ font: $any(fo.value) })">
+              @for (f of fonts; track f.id) {
+                <option [value]="f.id" [selected]="f.id === e.design.font">{{ f.label }}</option>
+              }
+            </select>
+            <button type="button" class="tog" [class.on]="e.design.bold" (click)="patchDesign({ bold: !e.design.bold })" aria-label="Bold" [attr.aria-pressed]="e.design.bold"><b>B</b></button>
+            <button type="button" class="tog" [class.on]="e.design.italic" (click)="patchDesign({ italic: !e.design.italic })" aria-label="Italic" [attr.aria-pressed]="e.design.italic"><i>I</i></button>
+          </div>
+        </section>
+
+        <section class="card">
+          @if (out(); as o) {
+            <h3>Output · {{ o.w }} × {{ o.h }} px</h3>
+            <p class="muted">{{ mm(paper()!.w) }}×{{ mm(paper()!.h) }} mm · {{ o.dpi }} DPI {{ format().toUpperCase() }}</p>
+          }
+          <div class="three">
+            <button type="button" class="seg" [class.on]="format() === 'jpeg'" (click)="format.set('jpeg')">JPEG</button>
+            <button type="button" class="seg" [class.on]="format() === 'pdf'" (click)="format.set('pdf')">PDF</button>
+            <button type="button" class="seg" [class.on]="format() === 'png'" (click)="format.set('png')">PNG</button>
+          </div>
+          <label class="check">
+            <input type="checkbox" [checked]="hiRes()" #hr (change)="hiRes.set(hr.checked)" />
+            <span>
+              <b>High resolution · 600 DPI</b>
+              <small>
+                Takes a little longer. PNG files are big.
+                @if (out()?.reduced) {
+                  <em>This sheet is too large for 600 DPI, so 300 DPI is used.</em>
+                }
+              </small>
+            </span>
+          </label>
+          <div class="two">
+            <button type="button" class="btn btn-soft" (click)="print()" [disabled]="busy() || !filled()">
+              <app-icon name="printer" [size]="18" /> Print
+            </button>
+            <button type="button" class="btn btn-dark" (click)="download()" [disabled]="busy() || !filled()">
+              <app-icon name="download" [size]="18" /> {{ format().toUpperCase() }}
+            </button>
+          </div>
+          @if (!filled()) {
+            <p class="muted hint">Add at least one photo to enable printing and download.</p>
+          }
+          <p class="stats">
+            <span><b>{{ e.downloads }}</b> downloaded</span>
+            <span><b>{{ e.prints }}</b> printed</span>
+          </p>
+        </section>
+      }
+    </aside>
+  </div>
+} @else {
+  <section class="card nf">
+    <h3>Event not found</h3>
+    <p class="muted">It may have been deleted, or it lives in another browser.</p>
+    <a class="btn btn-primary" routerLink="/">Back to My Events</a>
+  </section>
+}

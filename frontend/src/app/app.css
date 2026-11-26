@@ -1,0 +1,164 @@
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  height: var(--topbar-h);
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 0 24px;
+  background: #fff;
+  border-bottom: 1px solid var(--line);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: var(--ink);
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.brand b {
+  color: var(--brand);
+}
+
+.divider {
+  width: 1px;
+  height: 34px;
+  background: var(--line);
+}
+
+nav {
+  flex: 1;
+  display: flex;
+  gap: 6px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--ink);
+  font-weight: 600;
+  font-size: 1.05rem;
+  padding: 12px 20px;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+.chip.active {
+  background: var(--brand-soft);
+  color: var(--brand-dark);
+}
+
+.account {
+  position: relative;
+  margin-left: auto;
+}
+
+.userchip {
+  font: inherit;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 0;
+  cursor: pointer;
+  background: #eef0fb;
+  color: var(--ink);
+  font-weight: 600;
+  font-size: 1.05rem;
+  padding: 8px 18px 8px 8px;
+  border-radius: 999px;
+}
+
+.av {
+  display: grid;
+  place-items: center;
+  min-width: 40px;
+  height: 40px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #dfe3fb;
+  color: var(--brand-dark);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+@media (max-width: 640px) {
+  .topbar {
+    padding: 0 12px;
+    gap: 10px;
+  }
+  .brand .name,
+  .divider,
+  .uname {
+    display: none;
+  }
+  .userchip {
+    padding-right: 10px;
+  }
+  .chip {
+    padding: 10px 12px;
+    gap: 8px;
+    font-size: 0.95rem;
+  }
+}
+
+.pop {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  min-width: 230px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 12px 30px rgba(15, 27, 61, 0.14);
+  padding: 8px;
+  display: grid;
+}
+
+.pop .who {
+  display: grid;
+  padding: 8px 10px 10px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 6px;
+}
+
+.pop .who span {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.pop a,
+.pop button {
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  text-decoration: none;
+  color: var(--ink);
+  background: none;
+  border: 0;
+  padding: 10px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.pop a:hover,
+.pop button:hover {
+  background: #f1f4fa;
+}
+
+main {
+  padding: 20px 24px 24px;
+}
+
+@media (max-width: 640px) {
+  main {
+    padding: 14px 12px 24px;
+  }
+}
