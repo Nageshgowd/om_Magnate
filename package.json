@@ -5,7 +5,7 @@
   "scripts": {
     "dev:api": "node server.js",
     "dev:web": "npm start --prefix frontend -- --port 4300",
-    "build": "npm install --prefix frontend && npm run build --prefix frontend"
+    "build": "npm install --prefix frontend && npm run build --prefix frontend && node scripts/copy-dist.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
